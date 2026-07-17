@@ -5,6 +5,12 @@
       "title": "Telemetry Alert Dashboard",
       "description": "Telemetry-based performance alerting dashboard.",
       "url": "/gh/telemetry-alert-dashboard/"
+    },
+    {
+      "slug": "nova-compare",
+      "title": "Nova Compare",
+      "description": "Nova comparison dashboard.",
+      "url": "/gh/nova-compare/"
     }
   ]
 }

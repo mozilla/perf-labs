@@ -14,3 +14,10 @@
   to = "https://gmierz.github.io/telemetry-alert-dashboard/:splat"
   status = 200
   force = true
+
+# nova-compare  ->  https://gmierz.github.io/nova-compare/
+[[redirects]]
+  from = "/gh/nova-compare/*"
+  to = "https://gmierz.github.io/nova-compare/:splat"
+  status = 200
+  force = true
