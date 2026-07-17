@@ -3,9 +3,280 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World</title>
+    <title>perf-labs</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --panel: #1a1d24;
+            --border: #2a2f3a;
+            --text: #e6e8ec;
+            --muted: #9aa2b1;
+            --accent: #4c8bf5;
+        }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        header h1 { font-size: 18px; margin: 0; }
+        header p { margin: 0; color: var(--muted); font-size: 13px; }
+        .hamburger {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            padding: 0;
+        }
+        .hamburger:hover { background: var(--panel); }
+        .hamburger svg { display: block; }
+        .layout { flex: 1; display: flex; min-height: 0; position: relative; }
+        nav {
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 260px;
+            background: var(--bg);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 12px;
+            z-index: 20;
+            transform: translateX(-100%);
+            transition: transform 0.2s ease;
+        }
+        body.nav-open nav { transform: translateX(0); }
+        .backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        body.nav-open .backdrop { opacity: 1; pointer-events: auto; }
+        .tab {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text);
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+        .tab:hover { background: var(--panel); }
+        .tab.active { background: var(--panel); border-color: var(--border); }
+        .tab .desc { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+        main { flex: 1; position: relative; min-width: 0; }
+        iframe {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            background: #fff;
+        }
+        .empty, .error {
+            padding: 24px;
+            color: var(--muted);
+        }
+        .open-external {
+            margin-left: auto;
+            font-size: 12px;
+            color: var(--accent);
+            text-decoration: none;
+            visibility: hidden;
+        }
+    </style>
 </head>
 <body>
-    <h1>Hello, World!</h1>
+    <header>
+        <button class="hamburger" id="hamburger" aria-label="Toggle dashboard list" aria-expanded="false">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+                <line x1="2" y1="4.5" x2="16" y2="4.5"/>
+                <line x1="2" y1="9" x2="16" y2="9"/>
+                <line x1="2" y1="13.5" x2="16" y2="13.5"/>
+            </svg>
+        </button>
+        <h1>perf-labs</h1>
+        <p>Experimental performance dashboards</p>
+        <a class="open-external" id="open-external" href="#" target="_blank" rel="noopener">Open in new tab &#8599;</a>
+    </header>
+    <div class="layout">
+        <nav id="nav"></nav>
+        <div class="backdrop" id="backdrop"></div>
+        <main id="main">
+            <div class="empty">Loading dashboards&hellip;</div>
+        </main>
+    </div>
+
+    <script>
+        const nav = document.getElementById('nav');
+        const main = document.getElementById('main');
+        const openExternal = document.getElementById('open-external');
+        const hamburger = document.getElementById('hamburger');
+        const backdrop = document.getElementById('backdrop');
+        let dashboards = [];
+
+        function setNav(open) {
+            document.body.classList.toggle('nav-open', open);
+            hamburger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        hamburger.addEventListener('click', () => {
+            setNav(!document.body.classList.contains('nav-open'));
+        });
+        backdrop.addEventListener('click', () => setNav(false));
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') setNav(false);
+        });
+
+        let syncTimer = null;
+        let lastChildHref = null;
+
+        function slugOf(d, i) {
+            return d.slug || String(i);
+        }
+
+        // Hash format: #<slug> or #<slug>/<suffix>, where <suffix> is the part
+        // of the dashboard URL after its base (its own path + query + hash).
+        function parseHash() {
+            const raw = location.hash.replace(/^#\/?/, '');
+            const si = raw.indexOf('/');
+            if (si === -1) return { slug: decodeURIComponent(raw), suffix: '' };
+            return { slug: decodeURIComponent(raw.slice(0, si)), suffix: raw.slice(si + 1) };
+        }
+
+        // Resolve the manifest url (a same-origin proxied path like
+        // "/gh/telemetry-alert-dashboard/") to an absolute URL.
+        function baseOf(d) {
+            return new URL(d.url, location.href).href;
+        }
+
+        function targetFor(d, suffix) {
+            const base = baseOf(d);
+            return suffix ? new URL(suffix, base).href : base;
+        }
+
+        // Reflect the iframe's real URL back into the perf-labs address bar.
+        // Works because dashboards are same-origin (both on this github.io host);
+        // reading contentWindow.location throws for cross-origin frames, so we
+        // catch that and fall back to inbound-only deep-linking.
+        function startSync(frame, d, index) {
+            clearInterval(syncTimer);
+            const base = baseOf(d);
+            const poll = () => {
+                let href;
+                try {
+                    href = frame.contentWindow.location.href;
+                } catch (e) {
+                    clearInterval(syncTimer); // cross-origin: back-sync unavailable
+                    syncTimer = null;
+                    return;
+                }
+                if (href === lastChildHref) return;
+                lastChildHref = href;
+                openExternal.href = href;
+                const suffix = href.indexOf(base) === 0 ? href.slice(base.length) : '';
+                const newHash = '#' + slugOf(d, index) + (suffix ? '/' + suffix : '');
+                // replaceState updates the URL without firing hashchange, so it
+                // won't reload the iframe and clobber the state we just read.
+                history.replaceState(null, '', newHash);
+            };
+            frame.addEventListener('load', poll);
+            syncTimer = setInterval(poll, 400);
+        }
+
+        function select(index, suffix) {
+            const d = dashboards[index];
+            document.querySelectorAll('.tab').forEach((el, i) => {
+                el.classList.toggle('active', i === index);
+            });
+            const target = targetFor(d, suffix);
+            lastChildHref = target;
+            main.innerHTML = '';
+            const frame = document.createElement('iframe');
+            frame.src = target;
+            frame.title = d.title;
+            main.appendChild(frame);
+            openExternal.href = target;
+            openExternal.style.visibility = 'visible';
+            document.title = 'perf-labs — ' + d.title;
+            startSync(frame, d, index);
+        }
+
+        function routeFromHash() {
+            const { slug, suffix } = parseHash();
+            const index = dashboards.findIndex((d, i) => slugOf(d, i) === slug);
+            select(index >= 0 ? index : 0, index >= 0 ? suffix : '');
+        }
+
+        function render() {
+            nav.innerHTML = '';
+            dashboards.forEach((d, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'tab';
+                btn.innerHTML = '<span>' + escapeHtml(d.title) + '</span>' +
+                    (d.description ? '<span class="desc">' + escapeHtml(d.description) + '</span>' : '');
+                btn.addEventListener('click', () => {
+                    const slug = slugOf(d, i);
+                    setNav(false);
+                    if (location.hash.replace(/^#\/?/, '') === slug) {
+                        routeFromHash(); // already on this slug — reload it
+                    } else {
+                        location.hash = '#' + slug; // triggers hashchange -> routeFromHash
+                    }
+                });
+                nav.appendChild(btn);
+            });
+            if (dashboards.length) {
+                routeFromHash();
+                window.addEventListener('hashchange', routeFromHash);
+            } else {
+                main.innerHTML = '<div class="empty">No dashboards listed in manifest.json.</div>';
+            }
+        }
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        fetch('manifest.json', { cache: 'no-cache' })
+            .then(r => {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(data => {
+                dashboards = Array.isArray(data.dashboards) ? data.dashboards : [];
+                render();
+            })
+            .catch(err => {
+                main.innerHTML = '<div class="error">Failed to load manifest.json: ' +
+                    escapeHtml(err.message) + '</div>';
+            });
+    </script>
 </body>
 </html>

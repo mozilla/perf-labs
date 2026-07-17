@@ -1,0 +1,16 @@
+# Proxy external dashboards under this site's own origin so they can be embedded
+# same-origin (enables reading the iframe's URL for shareable deep links without
+# postMessage). A 200 rewrite serves the remote content in place; query strings
+# are forwarded automatically.
+#
+# One explicit rule per dashboard, mirroring manifest.json. To add a dashboard:
+#   1. add its entry to manifest.json (url = the "from" path below)
+#   2. add a matching [[redirects]] block here (from -> to)
+# Only the paths listed here are proxied; anything else 404s.
+
+# telemetry-alert-dashboard  ->  https://gmierz.github.io/telemetry-alert-dashboard/
+[[redirects]]
+  from = "/gh/telemetry-alert-dashboard/*"
+  to = "https://gmierz.github.io/telemetry-alert-dashboard/:splat"
+  status = 200
+  force = true

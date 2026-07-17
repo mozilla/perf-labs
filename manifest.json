@@ -1,0 +1,10 @@
+{
+  "dashboards": [
+    {
+      "slug": "telemetry-alert-dashboard",
+      "title": "Telemetry Alert Dashboard",
+      "description": "Telemetry-based performance alerting dashboard.",
+      "url": "/gh/telemetry-alert-dashboard/"
+    }
+  ]
+}
