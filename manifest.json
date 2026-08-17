@@ -35,6 +35,12 @@
       "title": "Speculation Rules Prefetch",
       "description": "Speculation Rules performance dashboard, Firefox vs Chrome.",
       "url": "/gh/speculation-rules-prefetch/"
+    },
+    {
+      "slug": "awfy2",
+      "title": "AWFY2",
+      "description": "Are We Fast Yet (AWFY) reimagined",
+      "url": "/gh/awfy2/"
     }
   ]
 }

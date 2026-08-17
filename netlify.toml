@@ -8,6 +8,14 @@
 #   2. add a matching [[redirects]] block here (from -> to)
 # Only the paths listed here are proxied; anything else 404s.
 
+# awfy2  ->  https://92kns.github.io/awfy2/
+# Vite emits relative asset URLs so this dashboard works under the proxy prefix.
+[[redirects]]
+  from = "/gh/awfy2/*"
+  to = "https://92kns.github.io/awfy2/:splat"
+  status = 200
+  force = true
+
 # telemetry-alert-dashboard  ->  https://gmierz.github.io/telemetry-alert-dashboard/
 [[redirects]]
   from = "/gh/telemetry-alert-dashboard/*"
