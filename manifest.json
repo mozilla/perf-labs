@@ -41,6 +41,12 @@
       "title": "AWFY2",
       "description": "Are We Fast Yet (AWFY) reimagined",
       "url": "/gh/awfy2/"
+    },
+    {
+      "slug": "perf-regression-tracker",
+      "title": "Performance Regression Tracker",
+      "description": "Perf alert regression bugs and how they were resolved, per test, suite, or task.",
+      "url": "/gh/perf-regression-tracker/"
     }
   ]
 }
