@@ -37,10 +37,10 @@
       "url": "/gh/speculation-rules-prefetch/"
     },
     {
-      "slug": "awfy2",
-      "title": "AWFY2",
+      "slug": "awfy-reimagined",
+      "title": "AWFY Reimagined",
       "description": "Are We Fast Yet (AWFY) reimagined",
-      "url": "/gh/awfy2/"
+      "url": "/gh/awfy-reimagined/"
     },
     {
       "slug": "perf-regression-tracker",

@@ -8,12 +8,22 @@
 #   2. add a matching [[redirects]] block here (from -> to)
 # Only the paths listed here are proxied; anything else 404s.
 
-# awfy2  ->  https://92kns.github.io/awfy2/
+# awfy-reimagined  ->  https://92kns.github.io/awfy2/
 # Vite emits relative asset URLs so this dashboard works under the proxy prefix.
+# The target is still the awfy2 repo: GitHub Pages paths follow the repo name, so
+# /awfy-reimagined/ 404s until the repo is renamed. Once it is, point the "to"
+# below at https://92kns.github.io/awfy-reimagined/.
 [[redirects]]
-  from = "/gh/awfy2/*"
+  from = "/gh/awfy-reimagined/*"
   to = "https://92kns.github.io/awfy2/:splat"
   status = 200
+  force = true
+
+# Old awfy2 proxy path, kept so existing links and embeds land on the new one.
+[[redirects]]
+  from = "/gh/awfy2/*"
+  to = "/gh/awfy-reimagined/:splat"
+  status = 301
   force = true
 
 # telemetry-alert-dashboard  ->  https://gmierz.github.io/telemetry-alert-dashboard/
